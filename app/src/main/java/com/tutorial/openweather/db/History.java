@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey;
 @Entity
 public class History
 {
-    @PrimaryKey
+    @PrimaryKey(autoGenerate = true)
     public int uid;
 
     @ColumnInfo(name = "image")

@@ -1,11 +1,13 @@
 package com.tutorial.openweather.repository;
 
+import android.content.Context;
 import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.tutorial.openweather.SingleLiveData;
+import com.tutorial.openweather.db.AppDatabase;
 import com.tutorial.openweather.model.weather.CurrentWeatherResponse;
 import com.tutorial.openweather.networking.ApiService;
 import com.tutorial.openweather.networking.NetworkState;

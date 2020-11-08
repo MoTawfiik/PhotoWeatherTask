@@ -50,8 +50,11 @@ import com.karumi.dexter.listener.PermissionDeniedResponse;
 import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.single.PermissionListener;
+import com.tutorial.openweather.AppExecutors;
 import com.tutorial.openweather.R;
 import com.tutorial.openweather.databinding.FragmentMainBinding;
+import com.tutorial.openweather.db.AppDatabase;
+import com.tutorial.openweather.db.History;
 import com.tutorial.openweather.model.weather.CurrentWeatherResponse;
 import com.tutorial.openweather.networking.NetworkState;
 import com.tutorial.openweather.viewmodel.MainViewModel;
@@ -80,6 +83,8 @@ public class MainFragment extends Fragment
     private LocationSettingsRequest mLocationSettingsRequest;
     private LocationCallback mLocationCallback;
     private Location mCurrentLocation;
+    private AppDatabase appDatabase;
+    private History history;
 
     private Boolean mRequestingLocationUpdates;
 
@@ -93,6 +98,8 @@ public class MainFragment extends Fragment
     {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+        appDatabase = AppDatabase.getInstance(requireContext());
+        history = new History();
     }
 
     @Override
@@ -173,12 +180,34 @@ public class MainFragment extends Fragment
                             @Override
                             public void onChanged(CurrentWeatherResponse response)
                             {
-                                binding.setWeather(response);
+                                saveResponseInLocale(response);
+                                takeScreenShotForLayout();
+                                Uri imageContentUri = getImageContentUri(requireActivity());
+                                history.setImageUri(String.valueOf(imageContentUri));
+                                AppExecutors.getInstance().diskIO().execute(new Runnable()
+                                {
+                                    @Override
+                                    public void run()
+                                    {
+                                        appDatabase.historyDAO().insertHistory(history);
+                                        Log.d(TAG, "run: success");
+                                    }
+                                });
+
                             }
                         });
             }
         }
 
+    }
+
+    private void saveResponseInLocale(CurrentWeatherResponse response)
+    {
+        history.setMaxTemp(String.valueOf(response.getMain().getTempMax()));
+        history.setMinTemp(String.valueOf(response.getMain().getTempMin()));
+        history.setTemp(String.valueOf(response.getMain().getTemp()));
+        history.setCity(response.getName());
+        binding.setWeather(response);
     }
 
     private void startLocationListener()
@@ -364,7 +393,6 @@ public class MainFragment extends Fragment
     {
         try
         {
-
             File cachePath = new File(requireActivity.getCacheDir(), "images");
             cachePath.mkdirs(); // don't forget to make the directory
             FileOutputStream stream = new FileOutputStream(cachePath + "/image.png"); // overwrites this image every time
