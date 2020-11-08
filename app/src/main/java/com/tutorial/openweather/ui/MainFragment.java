@@ -7,11 +7,13 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Looper;
 import android.provider.Settings;
+import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -59,6 +61,7 @@ import com.tutorial.openweather.model.weather.CurrentWeatherResponse;
 import com.tutorial.openweather.networking.NetworkState;
 import com.tutorial.openweather.viewmodel.MainViewModel;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -183,7 +186,6 @@ public class MainFragment extends Fragment
                                 saveResponseInLocale(response);
                                 takeScreenShotForLayout();
                                 Uri imageContentUri = getImageContentUri(requireActivity());
-                                history.setImageUri(String.valueOf(imageContentUri));
                                 AppExecutors.getInstance().diskIO().execute(new Runnable()
                                 {
                                     @Override
@@ -305,6 +307,8 @@ public class MainFragment extends Fragment
         {
             Bitmap bitmap = getArguments().getParcelable("bitmap");
             binding.photoBackground.setImageBitmap(bitmap);
+            String base64 = convertBitmpaToBase64(bitmap);
+            history.setImageUri(base64);
         }
 
     }
@@ -462,5 +466,24 @@ public class MainFragment extends Fragment
                         Toast.makeText(requireContext(), "Location updates stopped!", Toast.LENGTH_SHORT).show();
                     }
                 });
+    }
+
+    private String convertBitmpaToBase64(Bitmap bitmap)
+    {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+        byte[] byteArray = byteArrayOutputStream .toByteArray();
+
+        return Base64.encodeToString(byteArray, Base64.DEFAULT);
+    }
+
+    private Bitmap convertBase64ToBitmap(String encryptedImage)
+    {
+        byte[] decodedBytes = Base64.decode(
+                encryptedImage.substring(encryptedImage.indexOf(",")  + 1),
+                Base64.DEFAULT
+        );
+
+        return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
     }
 }
